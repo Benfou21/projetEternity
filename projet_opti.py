@@ -22,7 +22,7 @@ arr = df.values
 
 
 
-#Coder l'algo de vérif
+
 
 #Coder une première solution aléatoire
 
@@ -36,8 +36,9 @@ arr = df.values
 def solAleatoire(arr,n,m):
 
     sol  = np.zeros((n,m))
+    angle = np.zeros((n,m))
     
-    nB = 2*n-2 +2*m-2 -4
+    nB = 2*n-2 +2*m-2 -4    #Nb de bords sans coin
     corners = [i for i in range(0,4)]
     
     borders = [i for i in range(4,nB+4)]
@@ -48,33 +49,47 @@ def solAleatoire(arr,n,m):
     c = random.choice(corners)
     corners.remove(c)
     sol[0][0] = arr[c][4]
+    angle[0][0] = 1
     c = random.choice(corners)
+    
     corners.remove(c)
     sol[0][m-1] = arr[c][4]
+    angle[0][m-1] = 2
+
     c = random.choice(corners)
     corners.remove(c)
+    
     sol[n-1][0] = arr[c][4]
+    angle[n-1][0] = 3
+
+
     c = random.choice(corners)
     corners.remove(c)
+    
     sol[n-1][m-1] = arr[c][4]
+    angle[n-1][m-1] = 0
     
     # fill top and bottom borders with specific value
     for i in range(1,m-1):
         j = random.choice(borders)
         borders.remove(j)
         sol[0][i] = arr[j][4]
+        angle[0][i] = 2
         j = random.choice(borders)
         borders.remove(j)
         sol[n-1][i] = arr[j][4]
+        angle[n-1][i] = 0
         
     # fill left and right borders with specific value
     for i in range(1,n-1):
         j = random.choice(borders)
         borders.remove(j)
         sol[i][0] = arr[j][4]
+        angle[i][0] = 1
         j = random.choice(borders)
         borders.remove(j)
         sol[i][m-1] = arr[j][4]
+        angle[i][m-1] = 3
         
 
     for i in range(1, n-1):
@@ -84,7 +99,13 @@ def solAleatoire(arr,n,m):
 
     for row in sol :
         print(row)
-    return sol
+    print("---------")
+    for row in angle :
+        print(row)
+
+    
+    return sol,angle
+
 
 #population
 p = 4
@@ -93,6 +114,8 @@ for i in range(p):
     print("---")
 
 
+
+#Algo évaluation
 
 
 
