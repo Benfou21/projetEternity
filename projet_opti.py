@@ -38,10 +38,12 @@ def solAleatoire(arr,n,m):
     sol  = np.zeros((n,m))
     angle = np.zeros((n,m))
     
-    nB = 2*n-2 +2*m-2 -4    #Nb de bords sans coin
+    nB = 2*n-2 +2*m-2    #Nb de bords
+
     corners = [i for i in range(0,4)]
+
     
-    borders = [i for i in range(4,nB+4)]
+    borders = [i for i in range(4,nB)]
     
 
 
@@ -91,31 +93,46 @@ def solAleatoire(arr,n,m):
         sol[i][m-1] = arr[j][4]
         angle[i][m-1] = 3
         
-
+    inside=[i for i in range(nB,n*m)]
     for i in range(1, n-1):
         for k in range(1, m-1):
+            j = random.choice(inside)
+            inside.remove(j)
             sol[i][k] = arr[j][4]
             j+=1
 
     for row in sol :
         print(row)
-    print("---------")
+    print("---")
     for row in angle :
         print(row)
 
+    list = []
+    #Turn to solution
+    for i in range(len(sol)):
+        for j in range(len(sol[0])):
+            list.append((sol[i][j],angle[i][j]))
+
+    print(list)
     
-    return sol,angle
+    return list    #(id,angle)
 
 
 #population
 p = 4
 for i in range(p):
     solAleatoire(arr,3,3)
-    print("---")
+    print("---------")
 
 
 
 #Algo évaluation
+
+ex = [(1.0, 1.0), (4.0, 2.0), (3.0, 2.0), (5.0, 1.0), (8.0, 0.0), (6.0, 3.0), (0.0, 3.0), (7.0, 0.0), (2.0, 0.0)]
+
+
+
+
 
 
 
