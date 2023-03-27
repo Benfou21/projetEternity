@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import random
-
+import sys
 
 
 class piece:
@@ -10,11 +10,12 @@ class piece:
         self.colors = colors
         self.rot = rot
 
-class solution:
+class puzzle:
 
-    score  = 0
-    def __init__(self,matrice):
+    def __init__(self,matrice,score):
         self.matrice =  matrice
+        self.score = score
+    
 
 
 
@@ -30,19 +31,20 @@ def lecture(source):
     rows = contents.split("\n")
     arr = [row.split(" ") for row in rows]
     arr = arr[1:-1]
+    
     df =pd.DataFrame(arr)
     df["id" ] = [i for i in range(df[0].size)]
 
-    #print(df)
+    print(df)
 
     arr = df.values
     return arr
-    #print(arr)
+    
     #print(type(df[0][0])0)   #Str variables
 
 
 arr = lecture("pieces_03x03.txt")
-
+print(arr)
 
 
 #Coder une première solution aléatoire
@@ -146,24 +148,48 @@ def solAleatoire(arr,n,m):
     return list    #(id,angle)
 
 
-#population
-# p = 4
-# for i in range(p):
-    
-#     solAleatoire(arr,3,3)
-#     print("---------")
 
 
 
 #Algo évaluation
 
-ex = [(1.0, 1.0), (4.0, 2.0), (3.0, 2.0), (5.0, 1.0), (8.0, 0.0), (6.0, 3.0), (0.0, 3.0), (7.0, 0.0), (2.0, 0.0)]
-test = solAleatoire(arr,3,3)
-
 #Score_matrice = nb de match de face  (!= de pièces)   score max = 2*n*(n-1)    pour 16*16 = 480
 
-def score_eval(sol):
+def score_eval(pieces,solution,h,l):
     score = 0
+    
+    print(h)
+    print(l)
+
+    print("Verif horizontal:")
+    print("-----------------")
+    for i in range(l*h-1):
+        if i%l != l-1:
+            print(i, ",", i+1, end='')
+            f = pieces[solution[i][0]][(3-solution[i][1])%4]
+            g =pieces[solution[i+1][0]][(5-solution[i+1][1])%4]
+            if f == g:
+                score += 1
+                print(" -> ok")
+            else:
+                print(" -> not ok")
+
+    
+
+    print("Verif veritcal:")
+    print("---------------")
+
+    for i in range(l*(h-1)):
+        print(i, ",", i+l, end='')
+        a= pieces[solution[i][0]][(4-solution[i][1])%4]
+        b =pieces[solution[i+l][0]][(6-solution[i+l][1])%4]
+        if a == b:
+            score += 1
+            print(" -> ok")
+        else:
+            print(" -> not ok")
+    
+    
     return score
 
 
@@ -176,25 +202,41 @@ def eval(real,sol):
         if(real[i][1] == sol[i][1] and real[i][0] == sol[i][0] ) :
             score +=1
     return score
+#print(eval(ex,test))
 
 
-print(eval(ex,test))
+# ex = [(1.0, 1.0), (4.0, 2.0), (3.0, 2.0), (5.0, 1.0), (8.0, 0.0), (6.0, 3.0), (0.0, 3.0), (7.0, 0.0), (2.0, 0.0)]
+# test = solAleatoire(arr,3,3)
 
-
-
-
-
-
-
+# print(score_eval(arr,test,3,3))
 
 
 
 
+#population
+
+def population(n,h,l):
+    pop =[]
+    for i in range(n):
+        pieces = solAleatoire(arr,h,l)
+        score = score_eval(arr,pieces,h,l)
+        p = puzzle(pieces,score)
+        pop.append((p))
+    return pop
+
+pop = population(1,3,3)
+
+print(pop[0].score )
+print(pop[0].matrice)
 
 
 
 
-# top_left = array[0][0]
-# top_right = array[0][-1]
-# bottom_left = array[-1][0]
-# bottom_right = array[-1][-1]
+
+
+
+
+
+
+
+
