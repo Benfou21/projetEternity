@@ -16,6 +16,7 @@ for i in range(3):
 
 
 
-print(arr)
-
 arr[0][0] =   piece(1,[0,1,2,3],1)
+
+
+print([i for i in range(4,9)])

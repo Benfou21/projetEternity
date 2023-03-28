@@ -35,8 +35,6 @@ def lecture(source):
     df =pd.DataFrame(arr)
     df["id" ] = [i for i in range(df[0].size)]
 
-    print(df)
-
     arr = df.values
     return arr
     
@@ -70,10 +68,11 @@ def solAleatoire(arr,n,m):
     
     nB = 2*n-2 +2*m-2    #Nb de bords
 
-    corners = [i for i in range(0,4)]
+    corners = [i for i in range(0,4)] #Les quatres premiers sont les coins
 
     
-    borders = [i for i in range(4,nB)]
+    borders = [i for i in range(4,nB)]#Puis les bords
+    
     
     #fill the corners
     c = random.choice(corners)
@@ -121,8 +120,11 @@ def solAleatoire(arr,n,m):
         
         
     inside=[i for i in range(nB,n*m)]
+    
     for i in range(1, n-1):
+        
         for k in range(1, m-1):
+            
             j = random.choice(inside)
             inside.remove(j)
             rot = random.choice([0,1,2,3])
@@ -141,7 +143,7 @@ def solAleatoire(arr,n,m):
     #Turn to solution
     for i in range(len(sol)):
         for j in range(len(sol[0])):
-            list.append((sol[i][j].id,sol[i][j].rot))
+            list.append([sol[i][j].id,sol[i][j].rot])
 
     print(list)
     
@@ -158,16 +160,15 @@ def solAleatoire(arr,n,m):
 def score_eval(pieces,solution,h,l):
     score = 0
     
-    print(h)
-    print(l)
+    
 
     print("Verif horizontal:")
     print("-----------------")
     for i in range(l*h-1):
         if i%l != l-1:
             print(i, ",", i+1, end='')
-            f = pieces[solution[i][0]][(3-solution[i][1])%4]
-            g =pieces[solution[i+1][0]][(5-solution[i+1][1])%4]
+            f = pieces[solution[i][0]][(3-solution[i][1])%4]   # 3 : coté droite
+            g =pieces[solution[i+1][0]][(5-solution[i+1][1])%4] # 5 : coté gauche
             if f == g:
                 score += 1
                 print(" -> ok")
@@ -181,8 +182,8 @@ def score_eval(pieces,solution,h,l):
 
     for i in range(l*(h-1)):
         print(i, ",", i+l, end='')
-        a= pieces[solution[i][0]][(4-solution[i][1])%4]
-        b =pieces[solution[i+l][0]][(6-solution[i+l][1])%4]
+        a= pieces[solution[i][0]][(4-solution[i][1])%4]  # 4 : coté bottom
+        b =pieces[solution[i+l][0]][(6-solution[i+l][1])%4] # 6 : coté top
         if a == b:
             score += 1
             print(" -> ok")
@@ -224,10 +225,66 @@ def population(n,h,l):
         pop.append((p))
     return pop
 
+
+
+
+#Recherche locale
+
+#Générer un voisin
+def voisin(sol,h,l):
+    n = l*h  #n total
+
+
+    nB = 2*h-2 +2*l-2    #Nb de bords
+
+
+
+    #Sélection aléatoire de la position de la piece
+    #j = np.random.choice(range(n))
+    j =8
+    print(arr[j][:4])
+    if '0' not in arr[j][:4] :
+        print("change : " + str(j))
+        print(sol.matrice[j][1])
+        print((sol.matrice[j][1]+2)%4)
+        sol.matrice[j][1] = (sol.matrice[j][1]+2)%4   #rotation de 90°
+    else :
+        print("nop")
+    
+    sol.score = score_eval(arr,sol.matrice,h,l)
+
+    return sol
+
+
+
 pop = population(1,3,3)
 
 print(pop[0].score )
 print(pop[0].matrice)
+
+
+v = voisin(pop[0],3,3)
+
+print(v.matrice)
+print(v.score)
+
+    
+def voisinage(n,sol,h,l):
+    vois = []
+    for i in range(n):
+        v = voisin(sol,h,l)
+        vois.append(v)
+    return vois
+
+def selectionSol(voisinage,sol):
+    
+    scores = [ v.score for v in voisinage]
+    indice_max =  scores.index(max(scores))
+    if scores[indice_max] >= sol.score :
+        return voisinage[indice_max]
+    else :
+        return sol
+
 
 
 
