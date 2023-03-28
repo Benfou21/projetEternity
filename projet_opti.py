@@ -31,22 +31,26 @@ def lecture(source):
     rows = contents.split("\n")
     arr = [row.split(" ") for row in rows]
     size = arr[0]
-    print(size)
+    print(size[0])
     arr = arr[1:-1]
-    size = arr[0]
-    print(size)
+    h = int(size[0])
+    l = int( size[1])
+    
+
+
     
     df =pd.DataFrame(arr)
     df["id" ] = [i for i in range(df[0].size)]
 
     arr = df.values
-    return arr
+    return arr,h,l
     
     #print(type(df[0][0])0)   #Str variables
 
 
-arr = lecture("pieces_03x03.txt")
+arr,h,l = lecture("pieces_04x04.txt")
 print(arr)
+
 
 
 #Coder une première solution aléatoire
@@ -261,13 +265,13 @@ def voisin(sol,h,l):
 
 
 
-pop = population(1,3,3)
+pop = population(1,h,l)
 
 print(pop[0].score )
 print(pop[0].matrice)
 
 
-v = voisin(pop[0],3,3)
+v = voisin(pop[0],h,l)
 
 print(v.matrice)
 print(v.score)
