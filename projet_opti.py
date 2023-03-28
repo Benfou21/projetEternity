@@ -30,7 +30,11 @@ def lecture(source):
     #Turn into dataframe
     rows = contents.split("\n")
     arr = [row.split(" ") for row in rows]
+    size = arr[0]
+    print(size)
     arr = arr[1:-1]
+    size = arr[0]
+    print(size)
     
     df =pd.DataFrame(arr)
     df["id" ] = [i for i in range(df[0].size)]
