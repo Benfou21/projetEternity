@@ -140,11 +140,11 @@ def solAleatoire(arr,n,m):
             j+=1
             
 
-    for row in sol :
-        for value in row:
-            print(str(value.id) +"-", end='')
-        print("")
-    print("---")
+    # for row in sol :
+    #     for value in row:
+    #         print(str(value.id) +"-", end='')
+    #     print("")
+    # print("---")
     
 
     list = []
@@ -153,7 +153,7 @@ def solAleatoire(arr,n,m):
         for j in range(len(sol[0])):
             list.append([sol[i][j].id,sol[i][j].rot])
 
-    print(list)
+    #print(list)
     
     return list    #(id,angle)
 
@@ -170,33 +170,33 @@ def score_eval(pieces,solution,h,l):
     
     
 
-    print("Verif horizontal:")
-    print("-----------------")
+    #print("Verif horizontal:")
+    #print("-----------------")
     for i in range(l*h-1):
         if i%l != l-1:
-            print(i, ",", i+1, end='')
+            #print(i, ",", i+1, end='')
             f = pieces[solution[i][0]][(3-solution[i][1])%4]   # 3 : coté droite
             g =pieces[solution[i+1][0]][(5-solution[i+1][1])%4] # 5 : coté gauche
             if f == g:
                 score += 1
-                print(" -> ok")
-            else:
-                print(" -> not ok")
+                #print(" -> ok")
+            #else:
+                #print(" -> not ok")
 
     
 
-    print("Verif veritcal:")
-    print("---------------")
+    #print("Verif veritcal:")
+    #print("---------------")
 
     for i in range(l*(h-1)):
-        print(i, ",", i+l, end='')
+        #print(i, ",", i+l, end='')
         a= pieces[solution[i][0]][(4-solution[i][1])%4]  # 4 : coté bottom
         b =pieces[solution[i+l][0]][(6-solution[i+l][1])%4] # 6 : coté top
         if a == b:
             score += 1
-            print(" -> ok")
-        else:
-            print(" -> not ok")
+            #print(" -> ok")
+        #else:
+            #print(" -> not ok")
     
     
     return score
@@ -246,52 +246,83 @@ def voisin(sol,h,l):
     nB = 2*h-2 +2*l-2    #Nb de bords
 
 
-
+    
     #Sélection aléatoire de la position de la piece
-    #j = np.random.choice(range(n))
-    j =8
-    print(arr[j][:4])
+    j = np.random.choice(range(n))
+    
+    res = sol
     if '0' not in arr[j][:4] :
-        print("change : " + str(j))
-        print(sol.matrice[j][1])
-        print((sol.matrice[j][1]+2)%4)
-        sol.matrice[j][1] = (sol.matrice[j][1]+2)%4   #rotation de 90°
-    else :
-        print("nop")
+        
+        res.matrice[j][1] = (sol.matrice[j][1]+2)%4   #rotation de 90°
+        res.score = score_eval(arr,res.matrice,h,l)
+    # else :
+    #     print("nop")
     
-    sol.score = score_eval(arr,sol.matrice,h,l)
-
-    return sol
+    return res
 
 
 
-pop = population(1,h,l)
+#pop = population(1,h,l)
 
-print(pop[0].score )
-print(pop[0].matrice)
+# print(pop[0].score )
+# print(pop[0].matrice)
+# v = voisin(pop[0],h,l)
+# print(v.matrice)
+# print(v.score)
 
-
-v = voisin(pop[0],h,l)
-
-print(v.matrice)
-print(v.score)
-
-    
-def voisinage(n,sol,h,l):
-    vois = []
-    for i in range(n):
+#voisins[0] = solution à i-1
+def voisinage(nb_voisins,sol,h,l):
+    vois = [puzzle(sol.matrice,sol.score)]
+    print("solution i-1 :"+str(vois[0].score))
+    print([ s.score for s in vois])
+    for i in range(nb_voisins):
         v = voisin(sol,h,l)
-        vois.append(v)
+        print("voisin :"+str(i)+" , score : "+str(v.score))
+        
+        vois.append(puzzle(v.matrice,v.score))
+        print([ s.score for s in vois])
+    
     return vois
 
-def selectionSol(voisinage,sol):
-    
-    scores = [ v.score for v in voisinage]
+def selectionSol(vois):
+    print("fonction séléction :")
+    scores = [ v.score for v in vois]
+    print("list score voisin :")
+    print(scores)
     indice_max =  scores.index(max(scores))
-    if scores[indice_max] >= sol.score :
-        return voisinage[indice_max]
-    else :
-        return sol
+    print("meilleur score des voisins :"+str(scores[indice_max]))
+
+    
+    res_m = vois[indice_max].matrice
+    res_score = vois[indice_max].score
+
+    return puzzle(res_m,res_score)
+
+def recherche(arr,nb_voisins,iterations,h,l):
+
+    pieces = solAleatoire(arr,h,l)
+    score = score_eval(arr,pieces,h,l)
+    print("first : "+ str(score))
+    solution = puzzle(pieces,score)
+    
+    i = 0
+    while(i < iterations ):
+        i +=1
+        voisins = voisinage(nb_voisins,solution,h,l)
+        
+        new_solution = selectionSol(voisins)
+        
+        solution = puzzle( new_solution.matrice,new_solution.score)
+        print("new solution  :"+ str(solution.score))
+
+    print("Random solution : score for :" + str(score))
+    print("Solution for :" + str(solution.score))
+    return solution
+
+s = recherche(arr,5,10,4,4)
+
+
+
 
 
 
