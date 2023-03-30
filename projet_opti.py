@@ -3,6 +3,9 @@ import pandas as pd
 import random
 import sys
 import copy
+import matplotlib.pyplot as plt
+
+
 
 class piece:
     def __init__(self,id,colors,rot):
@@ -48,7 +51,7 @@ def lecture(source):
     #print(type(df[0][0])0)   #Str variables
 
 
-arr,h,l = lecture("pieces_04x04.txt")
+arr,h,l = lecture("pieces_03x03.txt")
 print(arr)
 
 
@@ -310,26 +313,32 @@ def voisin(sol,h,l):
     
     #2 CHANGEMENT DE PIECE 
     
-    pile_face = np.random.choice([1,2,3])
+    b = np.random.choice([1,2,3])
+    c = np.random.choice([1,2])
     
-    if(pile_face%2 !=0):
+    if(b%2 !=0):
         #print("changement bords")
-        #gestion bords  #deux chances sur trois
+        #gestion bords  
         j = np.random.choice(borders)
         borders.remove(j)
         k = np.random.choice(borders)
+        #Changement
+        id_j = sol.matrice[j][0]
+        sol.matrice[j][0] = res.matrice[k][0]
+        res.matrice[k][0] =  id_j
         
-    else :
+    if(c %2 !=0) :
         #print("changement coins")
-        #gestion coins  #1/3
+        #gestion coins  
         j = np.random.choice(corners)
         corners.remove(j)
         k = np.random.choice(corners)
+        #Changement
+        id_j = sol.matrice[j][0]
+        sol.matrice[j][0] = res.matrice[k][0]
+        res.matrice[k][0] =  id_j
     
-    #Changement
-    id_j = sol.matrice[j][0]
-    sol.matrice[j][0] = res.matrice[k][0]
-    res.matrice[k][0] =  id_j
+    
     
     
     
@@ -360,7 +369,7 @@ def voisinage(nb_voisins,sol,h,l):
     for i in range(nb_voisins):
         
         v_matrice,v_score = voisin(SOLUTION,h,l)  #BLEMs
-        
+        print("Solution de base :"+str(SOLUTION.score))
         print("voisin :"+str(i)+" , score : "+str(v_score))
         
         vois.append(puzzle(v_matrice,v_score))
@@ -385,7 +394,8 @@ def selectionSol(vois):
 
 
 def recherche(arr,nb_voisins,iterations,h,l):
-    
+    list =[]
+    list_sol =[]
     # pieces = solAleatoire(arr,h,l)
     # score = score_eval(arr,pieces,h,l)
     # print("first : "+ str(score))
@@ -396,21 +406,36 @@ def recherche(arr,nb_voisins,iterations,h,l):
     while(i < iterations ):
         i +=1
         voisins = voisinage(nb_voisins,solution,h,l)
-        
+        for v in voisins:
+            list.append(v.score)
         new_solution = selectionSol(voisins)
-        
+        list_sol.append(new_solution.score)
+        #list.append(new_solution.score)
         solution = puzzle( new_solution.matrice,new_solution.score)
         print("new solution  :"+ str(solution.score))
-    
+    list.append(solution.score)
+
+
     print("Random solution : score for :" + str(score))
     print("Solution for :" + str(solution.score))
-    return solution
+    return list,list_sol,solution
 
 
+nb_voisins =4
+iterations = 100
+list,list_sol,solution = recherche(arr,nb_voisins,iterations,h,l)
 
-s = recherche(arr,4,5,h,l)
+plt.plot(list)
 
+plt.scatter([i for i in range(len(list))],list)
+plt.scatter([i for i in range(len(list)) if i % (nb_voisins+1) == 0], 
+            [list[i] for i in range(len(list)) if i % (nb_voisins+1) == 0],
+            color='red')
 
+plt.title("paramètres : nb_voisins : "+str(nb_voisins)+", nb_itérations : "+str(iterations)+", taille puzzle :"+str(h)+"*"+str(l))
+plt.xlabel("voisinage")
+plt.ylabel("Score")
+plt.show()
 
 
 
