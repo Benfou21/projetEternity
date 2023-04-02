@@ -4,8 +4,8 @@ import random
 import sys
 import copy
 import matplotlib.pyplot as plt
-
-
+import statistics
+from scipy.optimize import curve_fit
 
 class piece:
     def __init__(self,id,colors,rot):
@@ -52,7 +52,7 @@ def lecture(source):
 
 
 arr,h,l = lecture("benchEternity2WithoutHint.txt")
-#arr,h,l = lecture("pieces_03x03.txt")
+#arr,h,l = lecture("pieces_04x04.txt")
 print(arr)
 
 
@@ -302,19 +302,21 @@ def voisin(sol,h,l):
     res = copy.deepcopy(sol)
 
     #1 ROTATION CENTRE
+
     #Récupération des indices des pièces du centre
     inside = []
     k=0
     for i in range(h):
         for j in range(l):
-            if(j in range(1,l-1)):
-                inside.append(k)
+            if(i in range(1,h-1)):
+                if(j in range(1,l-1)):
+                    inside.append(k)
             k += 1
     #print(inside)
     
     r = np.random.choice([1,2,3,4])  #tirage du potentiel nombre de changement
 
-    for i in range(r):  #Plus r est grand plus l'algorithme converge rapidement vers un top
+    for i in range(1):  #Plus r est grand plus l'algorithme converge rapidement vers un top
 
         a = np.random.choice([1,2,3,5]) #3/4
 
@@ -324,10 +326,41 @@ def voisin(sol,h,l):
             inside.remove(j)
             colors = [arr[res.matrice[j][0]][i] for i in range(4)]
             #Rotation centre
-            if '0' not in colors : 
-                
+            if '0' not in colors : #inutile mais renforcement de la sécuritéS
                 res.matrice[j][1] = (sol.matrice[j][1]+2)%4   #rotation de 90°
-            
+        
+
+    #Changement de piece centre (même rotation)
+    s = np.random.choice([1,2,3,4])  #tirage du potentiel nombre de changement 
+
+    for i in range(r):  #Plus r est grand plus l'algorithme converge rapidement vers un top
+
+        a = np.random.choice([1,2,3,5]) #3/4
+        j = np.random.choice(inside)
+        inside.remove(j)
+        k = np.random.choice(inside)
+        inside.remove(k)
+        id = sol.matrice[j][0]
+        sol.matrice[j][0] = res.matrice[k][0]
+        res.matrice[k][0] =  id
+
+        # if(a%2 !=0):
+        #     #print("changement centre")
+        #     j = np.random.choice(inside)
+        #     inside.remove(j)
+        #     colors = [arr[res.matrice[j][0]][i] for i in range(4)]
+        #     #Rotation centre
+        #     if '0' not in colors : #inutile mais renforcement de la sécurité
+        #         k = np.random.choice(inside)
+        #         inside.remove(k)
+        #         colors = [arr[res.matrice[k][0]][i] for i in range(4)]
+        #         #Rotation centre
+        #         if '0' not in colors : #inutile mais renforcement de la sécurité
+        #             #Changement
+        #             id = sol.matrice[j][0]
+        #             sol.matrice[j][0] = res.matrice[k][0]
+        #             res.matrice[k][0] =  id
+
     
     #2 CHANGEMENT DE PIECE 
     
@@ -413,22 +446,7 @@ def selectionSol(vois):
 #à chaque itéaration on va ajouter les modifications qui ont conduit les voisins à un moins bon score 
 #Max : 
 
-def selectionTabou(vois,tabou):
 
-    for voisin in vois[1:]:
-        if(voisin.score):
-            pass
-
-    print("fonction séléction :")
-    scores = [ v.score for v in vois]
-    print("list score voisin :")
-    print(scores)
-    indice_max =  scores.index(max(scores))
-    print("meilleur score des voisins :"+str(scores[indice_max]))
-    res_m = vois[indice_max].matrice
-    res_score = vois[indice_max].score
-    
-    return puzzle(res_m,res_score)
 
 
 def recherche(arr,nb_voisins,iterations,h,l):
@@ -464,20 +482,108 @@ nb_voisins = 10
 # 16*16, i =150,  nb_voisin    4=> 40-79    ,  10 => 60-85  , 20 => 72-94 (converge peu)
 # 16*16,  i = 200 , nb_voisin  4=> 70-87 
 iterations = 2000
-list,list_sol,solution = recherche(arr,nb_voisins,iterations,h,l)
 
-plt.plot(list)
+#TEST UNITAIRE
 
-plt.scatter([i for i in range(len(list))],list)
-plt.scatter([i for i in range(len(list)) if i % (nb_voisins+1) == 0], 
-            [list[i] for i in range(len(list)) if i % (nb_voisins+1) == 0],
-            color='red')
+#list,list_sol,solution = recherche(arr,nb_voisins,iterations,h,l)
+# plt.plot(list)
+# plt.scatter([i for i in range(len(list))],list)
+# plt.scatter([i for i in range(len(list)) if i % (nb_voisins+1) == 0], 
+#             [list[i] for i in range(len(list)) if i % (nb_voisins+1) == 0],
+#             color='red')
+# plt.title("paramètres : nb_voisins : "+str(nb_voisins)+", nb_itérations : "+str(iterations)+", taille puzzle :"+str(h)+"*"+str(l))
+# plt.xlabel("voisinage")
+# plt.ylabel("Score")
+# plt.show()
 
-plt.title("paramètres : nb_voisins : "+str(nb_voisins)+", nb_itérations : "+str(iterations)+", taille puzzle :"+str(h)+"*"+str(l))
-plt.xlabel("voisinage")
-plt.ylabel("Score")
-plt.show()
 
+#Bench de test
+
+def exponential_func(x, a, b, c):
+    return a * np.exp(-b * x) + c
+
+
+def analyse_i(arr,iterations,nb_voisins,h,l):
+    list_coef = []
+    list_dv = []
+    for i in iterations :
+        list,list_sol,solution = recherche(arr,nb_voisins,i,h,l)
+        # Calcul de la moyenne
+        moyenne = statistics.mean(list_sol)
+        # Calcul de l'écart-type
+        ecart_type = statistics.stdev(list_sol)
+        # Calcul du coefficient de variation
+        coeff_variation = ecart_type/moyenne
+        list_coef.append(coeff_variation)
+
+        #Vitesse de convergence (calcul demie vie)
+        a= [i for i in range(len(list_sol))]
+        # Ajustement de la fonction exponentielle à nos données
+        popt, pcov = curve_fit(exponential_func, a, list_sol)
+
+        # Calcul de la demi-vie du modèle ajusté
+        dv = np.log(2) / popt[1]
+        list_dv.append(dv)
+
+    # plt.scatter(a,list_sol)
+    b = [i for i in range(len(list_coef))]
+    plt.scatter(b,list_coef)
+    plt.scatter(b,list_dv)
+    plt.plot(list_coef,label =" coef_var")
+    plt.plot(list_dv, label = "demi-vie")
+    plt.legend(loc="upper right")
+    plt.ylabel("score")
+    plt.title("Coef de varation / demi-vie")
+    plt.show()
+    
+
+#analyse_i(arr,[50,200,2000,20000],10,h,l)
+#Recherche V1.2 : 
+# On remarque en générale une demi vie très faible, signe d'une très rapide convergence. On se plafonne très vite. (environ de 0,0050)
+# On remarque que le coef de varation est le plus grand pour des petites itérations. Montrant la encore que notre algorithme plafonne sur le long terme.
+#Cela suit les résultats observé sur les graphes
+
+
+
+def analyse_nb_voisin(arr,iterations,nb_voisins,h,l):
+    list_coef = []
+    list_dv = []
+    for n in nb_voisins :
+        list,list_sol,solution = recherche(arr,n,iterations,h,l)
+        # Calcul de la moyenne
+        moyenne = statistics.mean(list_sol)
+        # Calcul de l'écart-type
+        ecart_type = statistics.stdev(list_sol)
+        # Calcul du coefficient de variation
+        coeff_variation = ecart_type/moyenne
+        list_coef.append(coeff_variation)
+
+        #Vitesse de convergence (calcul demie vie)
+        a= [i for i in range(len(list_sol))]
+        # Ajustement de la fonction exponentielle à nos données
+        popt, pcov = curve_fit(exponential_func, a, list_sol)
+
+        # Calcul de la demi-vie du modèle ajusté
+        dv = np.log(2) / popt[1]
+        list_dv.append(dv)
+
+    # plt.scatter(a,list_sol)
+    b = [i for i in range(len(list_coef))]
+    plt.scatter(b,list_coef)
+    plt.scatter(b,list_dv)
+    plt.plot(list_coef,label =" coef_var")
+    plt.plot(list_dv, label = "demi-vie")
+    plt.legend(loc="upper right")
+    plt.ylabel("score")
+    plt.title("Coef de varation / demi-vie")
+    plt.show()
+
+#analyse_nb_voisin(arr,2000,[4,10,20],h,l)
+
+#Recherche V1.2
+#On obersve une demi vie constante, montrant que la convergence est proportielement identique. Le nb de voisins n'influ pas sur la rapidité de la convergence 
+#On observe un coef de variation qui diminue lorsque que le nb de voisins augmentent. Ce qui indique qu'augmenter le nb de voisin n'impacte pas la variation du score de la solution dans l'état actuel de l'algorithme. (Peut être quand rajoutant plus de mutation sur le voisin ceci peut jouer)
+#Upadate Recherche V1.3 (avec changement au centre) le coef de variation remonte avec plus de voisin, form de cuve ( forte var petit voisin, forte var beaucoup de voisin)
 
 
 
