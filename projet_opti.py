@@ -71,7 +71,6 @@ def verify(pieces,solution,h,l):
     for i in range(l):
         
         if pieces[solution.matrice[i][0]][(6-solution.matrice[i][1])%4] != '0':
-            
             print("Top border -> INVALID")
             sys.exit(1)
     #print("Top border -> VALID")
@@ -111,7 +110,6 @@ def solAleatoire(arr,n,m):
             sol[i].append( 0)
 
     
-
     #sol  = np.zeros((n,m))
     #angle = np.zeros((n,m))
     
@@ -336,30 +334,23 @@ def voisin(sol,h,l):
     for i in range(r):  #Plus r est grand plus l'algorithme converge rapidement vers un top
 
         a = np.random.choice([1,2,3,5]) #3/4
-        j = np.random.choice(inside)
-        inside.remove(j)
-        k = np.random.choice(inside)
-        inside.remove(k)
-        id = sol.matrice[j][0]
-        sol.matrice[j][0] = res.matrice[k][0]
-        res.matrice[k][0] =  id
 
-        # if(a%2 !=0):
-        #     #print("changement centre")
-        #     j = np.random.choice(inside)
-        #     inside.remove(j)
-        #     colors = [arr[res.matrice[j][0]][i] for i in range(4)]
-        #     #Rotation centre
-        #     if '0' not in colors : #inutile mais renforcement de la sécurité
-        #         k = np.random.choice(inside)
-        #         inside.remove(k)
-        #         colors = [arr[res.matrice[k][0]][i] for i in range(4)]
-        #         #Rotation centre
-        #         if '0' not in colors : #inutile mais renforcement de la sécurité
-        #             #Changement
-        #             id = sol.matrice[j][0]
-        #             sol.matrice[j][0] = res.matrice[k][0]
-        #             res.matrice[k][0] =  id
+        if(a%2 !=0):
+            #print("changement centre")
+            j = np.random.choice(inside)
+            inside.remove(j)
+            colors = [arr[res.matrice[j][0]][i] for i in range(4)]
+            #Rotation centre
+            if '0' not in colors : #inutile mais renforcement de la sécurité
+                k = np.random.choice(inside)
+                inside.remove(k)
+                colors = [arr[res.matrice[k][0]][i] for i in range(4)]
+                #Rotation centre
+                if '0' not in colors : #inutile mais renforcement de la sécurité
+                    #Changement
+                    id = sol.matrice[j][0]
+                    sol.matrice[j][0] = res.matrice[k][0]
+                    res.matrice[k][0] =  id
 
     
     #2 CHANGEMENT DE PIECE 
@@ -477,15 +468,15 @@ def recherche(arr,nb_voisins,iterations,h,l):
     return list,list_sol,solution
 
 
-nb_voisins = 10
+nb_voisins = 4
 # 16*16, i =100 , nb_voision   2=> 50 ,   10 => 70-80 , 15 => 70-82,   20 => 70-90 , 25 => 75-95 (converge peu) , 30 => 72 -83 (converge peu)  
 # 16*16, i =150,  nb_voisin    4=> 40-79    ,  10 => 60-85  , 20 => 72-94 (converge peu)
 # 16*16,  i = 200 , nb_voisin  4=> 70-87 
-iterations = 2000
+iterations = 20000
 
 #TEST UNITAIRE
 
-#list,list_sol,solution = recherche(arr,nb_voisins,iterations,h,l)
+# list,list_sol,solution = recherche(arr,nb_voisins,iterations,h,l)
 # plt.plot(list)
 # plt.scatter([i for i in range(len(list))],list)
 # plt.scatter([i for i in range(len(list)) if i % (nb_voisins+1) == 0], 
@@ -495,6 +486,17 @@ iterations = 2000
 # plt.xlabel("voisinage")
 # plt.ylabel("Score")
 # plt.show()
+
+#Recherche V1.3
+#Max score : 247 atteint avec 30 voisins et 20000 itérations
+#2 : 243 avec 10 voisins et 20000 itérations
+#3 score : 230 atteint avec 10 voisins et 20000 itérations    
+
+#On remarque sur les schémas que la recherche avec 30 voisins obtiens beaucoup de score en dessous du score retenu contrairement à la recherche avec 10 voisins et 4 voisin.
+#De plus le meilleur score est obtenu pour 4 voisins
+# On en conclu que pour un algo plus performent on peut prendre un plus petit nb de voisins 
+
+
 
 
 #Bench de test
@@ -585,8 +587,54 @@ def analyse_nb_voisin(arr,iterations,nb_voisins,h,l):
 #On observe un coef de variation qui diminue lorsque que le nb de voisins augmentent. Ce qui indique qu'augmenter le nb de voisin n'impacte pas la variation du score de la solution dans l'état actuel de l'algorithme. (Peut être quand rajoutant plus de mutation sur le voisin ceci peut jouer)
 #Upadate Recherche V1.3 (avec changement au centre) le coef de variation remonte avec plus de voisin, form de cuve ( forte var petit voisin, forte var beaucoup de voisin)
 
+def stat(arr,nb_voisins,iteration,n):
+    labels = []
+    for nb in nb_voisins :
+        list_score = []
+        for i in range(n):
+            list,list_sol,solution = recherche(arr,nb,iteration,h,l)
+            list_score.append(solution.score)
+        m = max(list_score)
+        moyenne = statistics.mean(list_score)
+
+        ecart_type = statistics.stdev(list_score)
+
+        label ="nb_voisins : +" + str(nb) + 'max : '+str(m) +" moyenne = "+str(moyenne) + "ecart-type + "+str(ecart_type)
+
+        labels.append(label)
+
+    for label in labels:
+        print(label)
+
+stat(arr,[4,10,20,30],2000,5)
+
+# nb_voisins : +4  max : 191 moyenne = 184.6 ecart-type + 6.148170459575759
+# nb_voisins : +10 max : 192 moyenne = 187.8 ecart-type + 4.604345773288535
+# nb_voisins : +20 max : 195 moyenne = 183.4 ecart-type + 6.58027355054484
+# nb_voisins : +30 max : 193 moyenne = 190.8 ecart-type + 1.9235384061671346
 
 
+
+
+#Tunning
+
+def tunning(arr,parametres,iteration):
+    
+    for p in parametres :
+
+            list,list_sol,solution = recherche(arr,p,iteration,h,l)
+            # plt.scatter(a,list_sol)
+            b = [i for i in range(len(list_sol))]
+            plt.scatter(b,list_sol)
+            plt.plot(list_sol, label = "v = "+str(p))
+            plt.legend(loc="lower right")
+    plt.ylabel("score")
+    plt.title("Score selon nb_voisin")
+    plt.show()
+
+#tunning(arr,[4,10,20,30,50],2000)
+#Résultat : généralement plus on a deux plus on converge rapidement vers une meilleure solution et plus on obtient un meilleur score
+#Même si avoir le plus de voisin n'est pas forcément le meilleur score : (ex cas 2000) __> best = 30voisins, pire = 50 voisins
 #Réaliser des stats 
 #Combiner des recherches locals différentes : ex( ajouté perturbation )
 
