@@ -51,7 +51,8 @@ def lecture(source):
     #print(type(df[0][0])0)   #Str variables
 
 
-arr,h,l = lecture("pieces_03x03.txt")
+arr,h,l = lecture("benchEternity2WithoutHint.txt")
+#arr,h,l = lecture("pieces_03x03.txt")
 print(arr)
 
 
@@ -97,6 +98,8 @@ def verify(pieces,solution,h,l):
             print("Right border -> INVALID")
             sys.exit(1)
     #print("right border -> VALID")
+
+
 
 def solAleatoire(arr,n,m):
 
@@ -216,7 +219,6 @@ def solAleatoire(arr,n,m):
 def score_eval(pieces,solution,h,l):
     score = 0
 
-
     #print("Verif horizontal:")
     #print("-----------------")
     for i in range(l*h-1):
@@ -229,8 +231,6 @@ def score_eval(pieces,solution,h,l):
                 #print(" -> ok")
             #else:
                 #print(" -> not ok")
-
-    
 
     #print("Verif veritcal:")
     #print("---------------")
@@ -299,22 +299,40 @@ def voisin(sol,h,l):
     right_border = [ i for i in range(l-1 +l, l*h -l, l) ]
     borders = top_border + bottom_border + left_border + right_border
     
-    
-    #1 ROTATION CENTRE
-    #Sélection aléatoire de la position de la piece
-    j = np.random.choice(range(n))
     res = copy.deepcopy(sol)
-    colors = [arr[res.matrice[j][0]][i] for i in range(4)]
-    #Rotation centre
-    if '0' not in colors : #ne prend pas l'id
-        print("rotation")
-        res.matrice[j][1] = (sol.matrice[j][1]+2)%4   #rotation de 90°
-        res.score = score_eval(arr,res.matrice,h,l)
+
+    #1 ROTATION CENTRE
+    #Récupération des indices des pièces du centre
+    inside = []
+    k=0
+    for i in range(h):
+        for j in range(l):
+            if(j in range(1,l-1)):
+                inside.append(k)
+            k += 1
+    #print(inside)
+    
+    r = np.random.choice([1,2,3,4])  #tirage du potentiel nombre de changement
+
+    for i in range(r):  #Plus r est grand plus l'algorithme converge rapidement vers un top
+
+        a = np.random.choice([1,2,3,5]) #3/4
+
+        if(a%2 !=0):
+            #print("rotation centre")
+            j = np.random.choice(inside)
+            inside.remove(j)
+            colors = [arr[res.matrice[j][0]][i] for i in range(4)]
+            #Rotation centre
+            if '0' not in colors : 
+                
+                res.matrice[j][1] = (sol.matrice[j][1]+2)%4   #rotation de 90°
+            
     
     #2 CHANGEMENT DE PIECE 
     
-    b = np.random.choice([1,2,3])
-    c = np.random.choice([1,2])
+    b = np.random.choice([1,2,3]) #2/3
+    c = np.random.choice([1,2])  #1/2
     
     if(b%2 !=0):
         #print("changement bords")
@@ -338,18 +356,14 @@ def voisin(sol,h,l):
         sol.matrice[j][0] = res.matrice[k][0]
         res.matrice[k][0] =  id_j
     
+
+    res.score = score_eval(arr,res.matrice,h,l)
     
-    
-    
-    
-    # else :
-    #     print("nop")
     verify(arr,res,h,l)
     
     return res.matrice,res.score
 
 # sol = solAleatoire(arr,h,l)
-
 # v = voisin(sol,h,l)
     
 #pop = population(1,h,l)
@@ -375,6 +389,8 @@ def voisinage(nb_voisins,sol,h,l):
         vois.append(puzzle(v_matrice,v_score))
         
     return vois
+
+
     
 
 def selectionSol(vois):
@@ -391,6 +407,28 @@ def selectionSol(vois):
     
     return puzzle(res_m,res_score)
 
+
+
+#list tabou
+#à chaque itéaration on va ajouter les modifications qui ont conduit les voisins à un moins bon score 
+#Max : 
+
+def selectionTabou(vois,tabou):
+
+    for voisin in vois[1:]:
+        if(voisin.score):
+            pass
+
+    print("fonction séléction :")
+    scores = [ v.score for v in vois]
+    print("list score voisin :")
+    print(scores)
+    indice_max =  scores.index(max(scores))
+    print("meilleur score des voisins :"+str(scores[indice_max]))
+    res_m = vois[indice_max].matrice
+    res_score = vois[indice_max].score
+    
+    return puzzle(res_m,res_score)
 
 
 def recherche(arr,nb_voisins,iterations,h,l):
@@ -421,8 +459,11 @@ def recherche(arr,nb_voisins,iterations,h,l):
     return list,list_sol,solution
 
 
-nb_voisins =4
-iterations = 100
+nb_voisins = 10
+# 16*16, i =100 , nb_voision   2=> 50 ,   10 => 70-80 , 15 => 70-82,   20 => 70-90 , 25 => 75-95 (converge peu) , 30 => 72 -83 (converge peu)  
+# 16*16, i =150,  nb_voisin    4=> 40-79    ,  10 => 60-85  , 20 => 72-94 (converge peu)
+# 16*16,  i = 200 , nb_voisin  4=> 70-87 
+iterations = 2000
 list,list_sol,solution = recherche(arr,nb_voisins,iterations,h,l)
 
 plt.plot(list)
@@ -440,13 +481,15 @@ plt.show()
 
 
 
+#Réaliser des stats 
+#Combiner des recherches locals différentes : ex( ajouté perturbation )
 
 
+# test = [[1,1],[7, 2],[3 ,2],[6, 1],[8,0],[5,3],[0,0],[4,0],[2,3] ]
 
 
+# s = score_eval(arr,test,3,3)
 
-
-
-
+# print(s)
 
 
