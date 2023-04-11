@@ -7,6 +7,11 @@ import matplotlib.pyplot as plt
 import statistics
 from scipy.optimize import curve_fit
 
+
+
+
+
+
 class piece:
     def __init__(self,id,colors,rot):
         self.id = id
@@ -38,13 +43,9 @@ def lecture(source):
     arr = arr[1:-1]
     h = int(size[0])
     l = int( size[1])
-    
-
-
-    
+        
     df =pd.DataFrame(arr)
     df["id" ] = [i for i in range(df[0].size)]
-
     arr = df.values
     return arr,h,l
     
@@ -110,8 +111,6 @@ def solAleatoire(arr,n,m):
             sol[i].append( 0)
 
     
-    #sol  = np.zeros((n,m))
-    #angle = np.zeros((n,m))
     
     nB = 2*n-2 +2*m-2    #Nb de bords
     
@@ -298,9 +297,9 @@ def voisin(sol,h,l):
     borders = top_border + bottom_border + left_border + right_border
     
     res = copy.deepcopy(sol)
-
+    
     #1 ROTATION CENTRE
-
+    
     #Récupération des indices des pièces du centre
     inside = []
     k=0
@@ -311,12 +310,12 @@ def voisin(sol,h,l):
                     inside.append(k)
             k += 1
     #print(inside)
-    
-    r = np.random.choice([1,2,3,4])  #tirage du potentiel nombre de changement
 
+    
+    
     for i in range(1):  #Plus r est grand plus l'algorithme converge rapidement vers un top
 
-        a = np.random.choice([1,2,3,5]) #3/4
+        a = np.random.choice([1,2,3,5]) #3/4    facteur d'aléatoire supplémentaire, ajout de diversification supplémentaire 
 
         if(a%2 !=0):
             #print("rotation centre")
@@ -329,9 +328,9 @@ def voisin(sol,h,l):
         
 
     #Changement de piece centre (même rotation)
-    s = np.random.choice([1,2,3,4])  #tirage du potentiel nombre de changement 
+    s = np.random.choice([1,2,3])  #tirage du potentiel nombre de changement 
 
-    for i in range(r):  #Plus r est grand plus l'algorithme converge rapidement vers un top
+    for i in range(s):  #Plus r est grand plus l'algorithme converge rapidement vers un top
 
         a = np.random.choice([1,2,3,5]) #3/4
 
@@ -400,24 +399,31 @@ def voisin(sol,h,l):
 
 #voisins[0] = solution à i-1
 def voisinage(nb_voisins,sol,h,l):
-    vois = [puzzle(sol.matrice,sol.score)]
+    vois = []
+
 
     SOLUTION = copy.deepcopy(sol)
+
+
         
     for i in range(nb_voisins):
         
         v_matrice,v_score = voisin(SOLUTION,h,l)  #BLEMs
         print("Solution de base :"+str(SOLUTION.score))
         print("voisin :"+str(i)+" , score : "+str(v_score))
+
         
         vois.append(puzzle(v_matrice,v_score))
+    
+    vois.append(puzzle(sol.matrice,sol.score))  #Ajout de la solution de base (à la fin pour pas qu'elle soit sélectionner si un voisin possède le même score)
         
     return vois
 
 
+
     
 
-def selectionSol(vois):
+def selectionSol(vois):  
 
 
     print("fonction séléction :")
@@ -428,19 +434,66 @@ def selectionSol(vois):
     print("meilleur score des voisins :"+str(scores[indice_max]))
     res_m = vois[indice_max].matrice
     res_score = vois[indice_max].score
+
     
     return puzzle(res_m,res_score)
 
 
 
-#list tabou
-#à chaque itéaration on va ajouter les modifications qui ont conduit les voisins à un moins bon score 
-#Max : 
+def indice_close_mean(lst):
+
+    mean = np.mean(lst)
+    diffs = [abs(x - mean) for x in lst]
+    min_diff = min(diffs)
+    closest = [i for i, diff in enumerate(diffs) if diff == min_diff]
+    i = closest[-1]
+    return i  #Renvoi l'indice de la valeur de la list se rapprochant le plus de la moyenne (haute) des valeur
+
+
+def selection_perturbation(vois):
+    
+    scores = [ v.score for v in vois]
+    indice_mean =  indice_close_mean(scores) #selection voisin avec score moyen   # selection du min =trop harcore (bug) 
+    res_m = vois[indice_mean].matrice
+    res_score = vois[indice_mean].score
+    return puzzle(res_m,res_score)
+
+
+
+def selection_perturbation_min(vois):
+    
+    
+    scores = [ v.score for v in vois]
+
+    indice_min =  scores.index(min(scores))
+    
+    res_m = vois[indice_min].matrice
+    res_score = vois[indice_min].score
+    return puzzle(res_m,res_score)
 
 
 
 
+
+#Fonction pour déclancher la perturbation 
+def calcul_ecart_type(list_sol,e):
+    res = False
+   
+    ecart_type = statistics.stdev(list_sol)
+
+    if(ecart_type < e):
+        res = True
+
+    return res
+
+
+
+
+
+
+import time
 def recherche(arr,nb_voisins,iterations,h,l):
+    t1 = time.time()
     list =[]
     list_sol =[]
     # pieces = solAleatoire(arr,h,l)
@@ -450,42 +503,86 @@ def recherche(arr,nb_voisins,iterations,h,l):
     solution = solAleatoire(arr,h,l)
     score = solution.score
     i = 0
+    nb_i = 0
     while(i < iterations ):
-        i +=1
+            
         voisins = voisinage(nb_voisins,solution,h,l)
         for v in voisins:
             list.append(v.score)
+    
+        
+
+
         new_solution = selectionSol(voisins)
+        # print([i.score for i in voisins ])
+        # print(new_solution.score)
+        # voisins.remove(new_solution)
         list_sol.append(new_solution.score)
+        
+               
+                         
+                            
+        #Perturbation    #A améliorer 
+        if(len(list_sol)>20000) :     #FAIRE SELON LA DIVERGENCE,  si il y a eu déjà une forte variation du score
+           if(nb_i>5000):   
+                perturbation = calcul_ecart_type(list_sol[-5000:],1)    #lorsque la valeur varie de moins de 1
+                if(perturbation == True):    
+                    new_solution = selection_perturbation(voisins)    
+                    list_sol.remove(list_sol[-1])  #retirer la solution ajouté plus haut
+                    list_sol.append(new_solution.score)   
+                    nb_i =0  #Réinitialisation du compteur avant perturbation si e <1   
+                    
+                     
+                
+            
         #list.append(new_solution.score)
         solution = puzzle( new_solution.matrice,new_solution.score)
         print("new solution  :"+ str(solution.score))
+        nb_i += 1
+        i +=1
     list.append(solution.score)
-
-
+    
+    #list représente la list de tous les scores (voisins inclus)
+    #list_sol représente la list de tous les scores des solutions retenues
+    
     print("Random solution : score for :" + str(score))
     print("Solution for :" + str(solution.score))
+    t2= time.time()
+    t = t2-t1
+    print(str(t))
     return list,list_sol,solution
 
+    
 
-nb_voisins = 4
-# 16*16, i =100 , nb_voision   2=> 50 ,   10 => 70-80 , 15 => 70-82,   20 => 70-90 , 25 => 75-95 (converge peu) , 30 => 72 -83 (converge peu)  
-# 16*16, i =150,  nb_voisin    4=> 40-79    ,  10 => 60-85  , 20 => 72-94 (converge peu)
-# 16*16,  i = 200 , nb_voisin  4=> 70-87 
-iterations = 20000
 
+nb_voisins = 10
+# 16*16, i =100 , nb_voision   2=> 50 ,   10 => 70-80 , 15 => 70-82,   20 => 70-90 , 25 => 75-95 (converge peu) , 30 => 72 -83 (converge peu)      
+# 16*16, i =150,  nb_voisin    4=> 40-79    ,  10 => 60-85  , 20 => 72-94 (converge peu)    
+# 16*16,  i = 200 , nb_voisin  4=> 70-87     
+iterations = 10000     
+     
 #TEST UNITAIRE
+#Convergence en 30v vers 25k iterations
+#Conv en 10Voisins vers 30k en 12min score 242
+#Conv en 10voisins avec perturbation (au dessus de 30k des 5k derniers), score 253
 
-# list,list_sol,solution = recherche(arr,nb_voisins,iterations,h,l)
-# plt.plot(list)
-# plt.scatter([i for i in range(len(list))],list)
-# plt.scatter([i for i in range(len(list)) if i % (nb_voisins+1) == 0], 
-#             [list[i] for i in range(len(list)) if i % (nb_voisins+1) == 0],
-#             color='red')
-# plt.title("paramètres : nb_voisins : "+str(nb_voisins)+", nb_itérations : "+str(iterations)+", taille puzzle :"+str(h)+"*"+str(l))
-# plt.xlabel("voisinage")
-# plt.ylabel("Score")
-# plt.show()
+
+
+# list_t,list,solution = recherche(arr,nb_voisins,iterations,h,l)  
+# plt.plot(list)  
+# plt.scatter([i for i in range(len(list))],list)  
+# plt.scatter([i for i in range(len(list)) if i % (nb_voisins+1) == 0],  
+#             [list[i] for i in range(len(list)) if i % (nb_voisins+1) == 0],  
+#             color='red')     
+# plt.title("paramètres : nb_voisins : "+str(nb_voisins)+", nb_itérations : "+str(iterations)+", taille puzzle :"+str(h)+"*"+str(l))       
+# plt.xlabel("voisinage")       
+# plt.ylabel("Score")       
+# plt.show()         
+
+
+
+
+
 
 #Recherche V1.3
 #Max score : 247 atteint avec 30 voisins et 20000 itérations
@@ -495,6 +592,10 @@ iterations = 20000
 #On remarque sur les schémas que la recherche avec 30 voisins obtiens beaucoup de score en dessous du score retenu contrairement à la recherche avec 10 voisins et 4 voisin.
 #De plus le meilleur score est obtenu pour 4 voisins
 # On en conclu que pour un algo plus performent on peut prendre un plus petit nb de voisins 
+
+
+
+
 
 
 
@@ -606,7 +707,7 @@ def stat(arr,nb_voisins,iteration,n):
     for label in labels:
         print(label)
 
-stat(arr,[4,10,20,30],2000,5)
+#stat(arr,[4,10,20,30],2000,5)
 
 # nb_voisins : +4  max : 191 moyenne = 184.6 ecart-type + 6.148170459575759
 # nb_voisins : +10 max : 192 moyenne = 187.8 ecart-type + 4.604345773288535
@@ -618,32 +719,274 @@ stat(arr,[4,10,20,30],2000,5)
 
 #Tunning
 
-def tunning(arr,parametres,iteration):
+# def tunning_V1(arr,parametres,iteration):
     
-    for p in parametres :
+#     for p in parametres :
 
-            list,list_sol,solution = recherche(arr,p,iteration,h,l)
+#             list,list_sol,solution = recherche(arr,10,iteration,h,l)
+#             # plt.scatter(a,list_sol)
+#             # b = [i for i in range(len(list_sol))]
+#             # plt.scatter(b,list_sol)
+#             plt.plot(list_sol, label = "v = "+str(p))
+#             plt.legend(loc="lower right")
+#     plt.ylabel("score")
+#     plt.title("Score selon nb_voisin")
+#     plt.show()
+
+
+def tunning(arr,parametres,iteration):
+
+    for p in parametres :
+        list_sol = []
+        for i in range(5) :
+            
+            list,list_s,solution = recherche(arr,p,iteration,h,l)
             # plt.scatter(a,list_sol)
-            b = [i for i in range(len(list_sol))]
-            plt.scatter(b,list_sol)
-            plt.plot(list_sol, label = "v = "+str(p))
-            plt.legend(loc="lower right")
+            #Somme
+            if (i>0):
+                for i in range(len(list_sol)):
+                    list_sol[i] = (list_sol[i] + list_s[i])
+            else:
+                list_sol =list_s
+            
+        #moyenne
+        for i in range(len(list_sol)):
+                    list_sol[i] = list_sol[i] / 5
+        
+        b = [i for i in range(len(list_sol))]
+        
+        #plt.scatter(b,list_sol)
+        plt.plot(list_sol, label = "nb_voisins : "+str(p))
+        plt.legend(loc="lower right")
     plt.ylabel("score")
-    plt.title("Score selon nb_voisin")
+    plt.title("Score moyen (5 itérations) selon nombre de voisins")
     plt.show()
 
-#tunning(arr,[4,10,20,30,50],2000)
+tunning(arr,[4,10,30],5000)
+
+
 #Résultat : généralement plus on a deux plus on converge rapidement vers une meilleure solution et plus on obtient un meilleur score
 #Même si avoir le plus de voisin n'est pas forcément le meilleur score : (ex cas 2000) __> best = 30voisins, pire = 50 voisins
 #Réaliser des stats 
 #Combiner des recherches locals différentes : ex( ajouté perturbation )
 
 
-# test = [[1,1],[7, 2],[3 ,2],[6, 1],[8,0],[5,3],[0,0],[4,0],[2,3] ]
 
 
-# s = score_eval(arr,test,3,3)
-
-# print(s)
 
 
+
+#Recherche selon le nombre de mutation
+#paramètres = [pcentre,pbords,pcoins]
+def tunning_p(arr,parametres,iteration):
+
+    for p in parametres :
+        list_sol = []
+        for i in range(5) :
+            pcentre = p[0] 
+            pbords =p[1]
+            pcoins = p[2]
+            list,list_s,solution = recherche_tunning(arr,10,iteration,h,l,pcentre,pbords,pcoins)
+            # plt.scatter(a,list_sol)
+            #Somme
+            if (i>0):
+                for i in range(len(list_sol)):
+                    list_sol[i] = (list_sol[i] + list_s[i])
+            else:
+                list_sol =list_s
+            
+        #moyenne
+        for i in range(len(list_sol)):
+                    list_sol[i] = list_sol[i] / 5
+
+        b = [i for i in range(len(list_sol))]
+
+        #plt.scatter(b,list_sol)
+        plt.plot(list_sol, label = "nb_centre = "+str(pcentre) +" nb_bords = "+str(pbords)+" nb_coins = "+str(pcoins))
+        plt.legend(loc="lower right")
+    plt.ylabel("score")
+    plt.title("Score moyen (5 itérations) selon nombre de changement")
+    plt.show()
+
+
+
+
+def recherche_tunning(arr,nb_voisins,iterations,h,l,pcentre,pbords,pcoins):
+    t1 = time.time()
+    list =[]
+    list_sol =[]
+    # pieces = solAleatoire(arr,h,l)
+    # score = score_eval(arr,pieces,h,l)
+    # print("first : "+ str(score))
+    # solution = puzzle(pieces,score)
+    solution = solAleatoire(arr,h,l)
+    score = solution.score
+    i = 0
+    nb_i = 0
+    while(i < iterations ):
+        
+        
+        voisins = voisinage_tunning(nb_voisins,solution,h,l,pcentre,pbords,pcoins)
+        for v in voisins:
+            list.append(v.score)
+        
+        new_solution = selectionSol(voisins)
+        # print([i.score for i in voisins ])
+        # print(new_solution.score)
+        # voisins.remove(new_solution)
+        list_sol.append(new_solution.score)
+
+        #Perturbation    #A améliorer 
+        # if(len(list_sol)>10000) :     #FAIRE SELON LA DIVERGENCE,  si il y a eu déjà une forte variation du score
+        #    if(nb_i>3000):
+        #         perturbation = calcul_ecart_type(list_sol[-3000:],1)    #lorsque la valeur varie de moins de 1
+        #         if(perturbation == True):
+        #             new_solution = selection_perturbation(voisins)
+        #             list_sol.remove(list_sol[-1])  #retirer la solution ajouté plus haut
+        #             list_sol.append(new_solution.score)   
+        #             nb_i =0  #Réinitialisation du compteur avant perturbation si e <1   
+               
+        
+        #list.append(new_solution.score)
+        solution = puzzle( new_solution.matrice,new_solution.score)
+        print("new solution  :"+ str(solution.score))
+        nb_i += 1
+        i +=1
+    list.append(solution.score)
+
+    #list représente la list de tous les scores (voisins inclus)
+    #list_sol représente la list de tous les scores des solutions retenues
+
+
+    print("Random solution : score for :" + str(score))
+    print("Solution for :" + str(solution.score))
+    t2= time.time()
+    t = t2-t1
+    print(str(t))
+    return list,list_sol,solution
+
+
+#Générer un voisin
+def voisin_tunning(sol,h,l,pcentre,pbords,pcoins):
+    
+    n = l*h  #n total
+    
+    corners = [0,l-1,l*(h-1),l*h-1]  #Positions des coins
+    
+    #Position des bords
+    top_border = [i for i in range(1,l-1)] 
+    bottom_border = [i for i in range(l*(h-1)+1, l*h-1)]
+    left_border = [i for i in range(l, l*h -l, l) ]
+    right_border = [ i for i in range(l-1 +l, l*h -l, l) ]
+    borders = top_border + bottom_border + left_border + right_border
+    
+    res = copy.deepcopy(sol)
+
+    #1 ROTATION CENTRE
+
+    #Récupération des indices des pièces du centre
+    inside = []
+    k=0
+    for i in range(h):
+        for j in range(l):
+            if(i in range(1,h-1)):
+                if(j in range(1,l-1)):
+                    inside.append(k)
+            k += 1
+    
+    for i in range(pcentre):  #Plus p est grand plus l'algorithme converge rapidement vers un top
+
+            #print("rotation centre")
+            j = np.random.choice(inside)
+            inside.remove(j)
+            colors = [arr[res.matrice[j][0]][i] for i in range(4)]
+            #Rotation centre
+            if '0' not in colors : #inutile mais renforcement de la sécuritéS
+                res.matrice[j][1] = (sol.matrice[j][1]+2)%4   #rotation de 90°
+        
+
+    #Changement de piece centre (même rotation)
+    
+    for i in range(pcentre):  #Plus r est grand plus l'algorithme converge rapidement vers un top
+        
+            #print("changement centre")
+            j = np.random.choice(inside)
+            inside.remove(j)
+            colors = [arr[res.matrice[j][0]][i] for i in range(4)]
+            #Rotation centre
+            if '0' not in colors : #inutile mais renforcement de la sécurité
+                k = np.random.choice(inside)
+                inside.remove(k)
+                colors = [arr[res.matrice[k][0]][i] for i in range(4)]
+                #Rotation centre
+                if '0' not in colors : #inutile mais renforcement de la sécurité
+                    #Changement
+                    id = sol.matrice[j][0]
+                    sol.matrice[j][0] = res.matrice[k][0]
+                    res.matrice[k][0] =  id
+
+    
+    #2 CHANGEMENT DE PIECE Bords/ Coins
+    
+    for i in range(pbords) :
+    
+            #print("changement bords")
+            #gestion bords  
+            j = np.random.choice(borders)
+            borders.remove(j)
+            k = np.random.choice(borders)
+            #Changement
+            id_j = sol.matrice[j][0]
+            sol.matrice[j][0] = res.matrice[k][0]
+            res.matrice[k][0] =  id_j
+            
+    for i in range(pcoins) :
+            #print("changement coins")
+            #gestion coins  
+            j = np.random.choice(corners) #Sans remise pour les tests
+            
+            k = np.random.choice(corners)
+            if (k != j) : 
+                #Changement
+                id_j = sol.matrice[j][0]
+                sol.matrice[j][0] = res.matrice[k][0]
+                res.matrice[k][0] =  id_j
+    
+
+    res.score = score_eval(arr,res.matrice,h,l)
+    
+    verify(arr,res,h,l)
+    
+    return res.matrice,res.score
+
+
+def voisinage_tunning(nb_voisins,sol,h,l,pcentre,pbords,pcoins):
+    vois = [puzzle(sol.matrice,sol.score)]
+
+    SOLUTION = copy.deepcopy(sol)
+        
+    for i in range(nb_voisins):
+        
+        v_matrice,v_score = voisin_tunning(SOLUTION,h,l,pcentre,pbords,pcoins)  #BLEMs
+        print("Solution de base :"+str(SOLUTION.score))
+        print("voisin :"+str(i)+" , score : "+str(v_score))
+        
+        vois.append(puzzle(v_matrice,v_score))
+        
+    return vois
+
+
+
+
+
+#TEST
+
+#paramètres = [pcentre,pbords,pcoins]
+parametres = [[2,1,1],[4,3,2],[8,6,3],[5,2,1]]
+#tunning_p(arr,parametres,2000)
+
+
+#Résultat : 
+#On remarque que l'algorithme avec le moins de changement possède de meilleurs performances (courbes bleus)
+
+#Solution mettre le moins possible de mutation par voisin, plus facteur d'aléatoire
